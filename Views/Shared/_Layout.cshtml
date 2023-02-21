@@ -1,0 +1,27 @@
+﻿@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>@ViewBag.Title - IndyBooks</title>
+    <link rel="stylesheet" href="/Styles.css">
+</head>
+<body>
+    <header>
+        <img id="logo" src="/Images/IndyBooksLogo.png" alt="Book Logo" />
+        <h1>Indy Books</h1>
+        <h2>Your Place for Reading</h2>
+    </header>
+    <nav>
+        <h3>Admin</h3>
+        <!-- add the link to display All Books -->
+
+        <a asp-controller="Admin" asp-action="Search">Search</a>
+        <a asp-controller="Admin" asp-action="CreateBook">Create a Book</a>
+    </nav>
+    <div class="container body-content">
+        @RenderBody()
+    </div>
+</body>
+</html>
