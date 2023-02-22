@@ -22,6 +22,9 @@ namespace IndyBooks.Controllers
         public IActionResult DeleteBook(long id)
         {
             //TODO: Remove the Book associated with the given id number; Save Changes
+            var dBook = new Book { Id = id };
+            _db.Remove(dBook);
+            _db.SaveChanges();
 
             return RedirectToAction("Index");
         }
@@ -33,8 +36,19 @@ namespace IndyBooks.Controllers
         {
             //TODO: Index will return the list of books (with Author), ordered by SKU
             //or a single book (with Author), if passed an id > 0
-            IEnumerable<Book> books = _db.Books.Include(b => b.Author);
+            if (id > 0)
+            {
+                IEnumerable<Book> sBook = _db.Books.Include(b => b.Author).Where(b => b.Id == id);
+                var searchResultsSingle = new SearchResultsVM
+                {
+                    FoundBooks = sBook,
+                    HalfPriceSale = false
 
+                };
+                return View("SearchResults", searchResultsSingle);
+            }
+
+            IEnumerable<Book> books = _db.Books.Include(b => b.Author).OrderBy(b => b.SKU);
 
 
             var searchResults = new SearchResultsVM
@@ -51,7 +65,7 @@ namespace IndyBooks.Controllers
         public IActionResult CreateBook()
         {
             //Form uses the collection of Writers to populate the drop-down list
-            return View(new CreateBookVM { Writers = _db.Writers });
+            return View(new CreateBookVM { Writers = _db.Writers.OrderBy(b => b.Name) });
         }
         [HttpPost]
         public IActionResult CreateBook(CreateBookVM bookVM, long id)
@@ -59,16 +73,39 @@ namespace IndyBooks.Controllers
             Writer writer;
             //TODO: Assign the writer object depending on what is entered for the AUTHOR NAME in the ViewModel
             // if the VM has an AuthorId (from the drop-down) you can use it to get that writer, otherwise create a new one
-
+            if (bookVM.AuthorId > 0)
+            {
+                writer = _db.Writers.Single(b => b.Id == bookVM.AuthorId);
+            } else
+            {
+                writer = new Writer { Name = bookVM.Name };
+                _db.Add(writer);
+                _db.SaveChanges();
+            }
 
             //TODO: Create a new Book (with the writer above)
-
+            Book book = new Book { Title = bookVM.Title, Author = writer, SKU = bookVM.SKU, Price = bookVM.Price };
 
             //TODO: Add book (and perhaps a new writer) to the Db; SaveChanges
+            if (id > 0)
+            {
+                var BookUpdate = new Book { Title = book.Title, Author = book.Author, SKU = book.SKU, Price = book.Price, Id = id };
+                _db.Update(BookUpdate);
+                _db.SaveChanges();
+                return RedirectToAction("Index", new { id = BookUpdate.Id });
+            }
+            else
+            {
+                _db.Add(book);
+                _db.SaveChanges();
+                return RedirectToAction("Index", new { id = book.Id });
+            }
+            
+            
 
 
             //TODO: Display the single book that was added using the Index Action and Route
-            return RedirectToAction("Index", new { id = 0 });
+            
         }
         /***
          * UPDATE (reusing the CreateBook View, passing it the Book id to be updated) 
@@ -77,11 +114,15 @@ namespace IndyBooks.Controllers
          public IActionResult UpdateBook(long id)
         {
             //TODO: Display the database info for the Book (and its Author) indicated by the id 
-            Book book;
+            Book book = _db.Books.Include(b => b.Author).SingleOrDefault(b => b.Id == id);
 
             var createbookVM = new CreateBookVM
             {
-               
+                BookId = book.Id,
+                Title = book.Title,
+                SKU = book.SKU,
+                Price = book.Price,
+                Writers = _db.Writers.Where(w => w.Id == book.Author.Id)
             };
             return View("CreateBook", createbookVM);
             
