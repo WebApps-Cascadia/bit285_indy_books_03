@@ -21,8 +21,10 @@ namespace IndyBooks.Controllers
         [HttpGet]
         public IActionResult DeleteBook(long id)
         {
-            //TODO: Remove the Book associated with the given id number; Save Changes
-
+            //TODO DONE: Remove the Book associated with the given id number; Save Changes
+            var book = new Book {Id = id};
+            _db.Remove(book);
+            _db.SaveChanges();
             return RedirectToAction("Index");
         }
         /***
@@ -31,9 +33,9 @@ namespace IndyBooks.Controllers
         [HttpGet]
         public IActionResult Index(long id)
         {
-            //TODO: Index will return the list of books (with Author), ordered by SKU
+            //TODO DONE: Index will return the list of books (with Author), ordered by SKU
             //or a single book (with Author), if passed an id > 0
-            IEnumerable<Book> books = _db.Books.Include(b => b.Author);
+            IEnumerable<Book> books = _db.Books.Include(b => b.Author).OrderBy(b => b.SKU);
 
 
 
