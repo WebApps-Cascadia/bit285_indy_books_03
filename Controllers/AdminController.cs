@@ -7,6 +7,7 @@ using IndyBooks.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using static System.Reflection.Metadata.BlobBuilder;
 
 namespace IndyBooks.Controllers
 {
@@ -22,6 +23,9 @@ namespace IndyBooks.Controllers
         public IActionResult DeleteBook(long id)
         {
             //TODO: Remove the Book associated with the given id number; Save Changes
+            var book = new Book { Id = id };
+            _db.Remove(book);
+            _db.SaveChanges();
 
             return RedirectToAction("Index");
         }
@@ -33,9 +37,14 @@ namespace IndyBooks.Controllers
         {
             //TODO: Index will return the list of books (with Author), ordered by SKU
             //or a single book (with Author), if passed an id > 0
-            IEnumerable<Book> books = _db.Books.Include(b => b.Author);
+            IEnumerable<Book> books = _db.Books.Include(b => b.Author)
+            .OrderBy(b => b.SKU);
 
-
+            if (id > 0)
+            {
+                books = books.Where(b => b.Id == id);
+               
+            }
 
             var searchResults = new SearchResultsVM
             {
@@ -51,24 +60,35 @@ namespace IndyBooks.Controllers
         public IActionResult CreateBook()
         {
             //Form uses the collection of Writers to populate the drop-down list
-            return View(new CreateBookVM { Writers = _db.Writers });
+            return View(new CreateBookVM { Writers = _db.Writers.OrderBy(b => b.Name)});
         }
         [HttpPost]
         public IActionResult CreateBook(CreateBookVM bookVM, long id)
         {
             Writer writer;
+
             //TODO: Assign the writer object depending on what is entered for the AUTHOR NAME in the ViewModel
             // if the VM has an AuthorId (from the drop-down) you can use it to get that writer, otherwise create a new one
-
+            if (bookVM.AuthorId > 0)
+            {
+                writer = _db.Writers.Single(b => b.Id == bookVM.AuthorId);
+            }
+            else { 
+            writer = new Writer { Name = bookVM.Name };
+            _db.Add(writer);
+            _db.SaveChanges();
+            }
 
             //TODO: Create a new Book (with the writer above)
-
+            var book = new Book {Title = bookVM.Title, SKU = bookVM.SKU, Price = bookVM.Price, Author = writer};
 
             //TODO: Add book (and perhaps a new writer) to the Db; SaveChanges
-
+            _db.Add(book);
+            _db.SaveChanges();
 
             //TODO: Display the single book that was added using the Index Action and Route
-            return RedirectToAction("Index", new { id = 0 });
+            return RedirectToAction("Index", new { id = book.Id });
+         
         }
         /***
          * UPDATE (reusing the CreateBook View, passing it the Book id to be updated) 
